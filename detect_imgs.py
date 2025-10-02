@@ -31,18 +31,16 @@ from vision.ssd.mb_tiny_fd import create_mb_tiny_fd, create_mb_tiny_fd_predictor
 from vision.ssd.mb_tiny_RFB_fd import create_Mb_Tiny_RFB_fd, create_Mb_Tiny_RFB_fd_predictor
 
 result_path = "./detect_imgs_results"
-label_path = "./models/voc-model-labels.txt"
+label_path = "./models/coco-model-labels.txt"  # Changed to COCO labels
 test_device = args.test_device
 
 class_names = [name.strip() for name in open(label_path).readlines()]
 if args.net_type == 'slim':
-    model_path = "models/pretrained/version-slim-320.pth"
-    # model_path = "models/pretrained/version-slim-640.pth"
+    model_path = "models/pretrained/version-slim-640.pth"
     net = create_mb_tiny_fd(len(class_names), is_test=True, device=test_device)
     predictor = create_mb_tiny_fd_predictor(net, candidate_size=args.candidate_size, device=test_device)
 elif args.net_type == 'RFB':
-    model_path = "models/pretrained/version-RFB-320.pth"
-    # model_path = "models/pretrained/version-RFB-640.pth"
+    model_path = "models/pretrained/version-RFB-640.pth"
     net = create_Mb_Tiny_RFB_fd(len(class_names), is_test=True, device=test_device)
     predictor = create_Mb_Tiny_RFB_fd_predictor(net, candidate_size=args.candidate_size, device=test_device)
 else:
@@ -62,11 +60,12 @@ for file_path in listdir:
     sum += boxes.size(0)
     for i in range(boxes.size(0)):
         box = boxes[i, :]
+        label_index = labels[i].item()
         cv2.rectangle(orig_image, (box[0], box[1]), (box[2], box[3]), (0, 0, 255), 2)
-        # label = f"""{voc_dataset.class_names[labels[i]]}: {probs[i]:.2f}"""
-        label = f"{probs[i]:.2f}"
-        # cv2.putText(orig_image, label, (box[0], box[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-    cv2.putText(orig_image, str(boxes.size(0)), (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        # Display class name and confidence
+        label = f"{class_names[label_index]}: {probs[i]:.2f}"
+        cv2.putText(orig_image, label, (box[0], box[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+    cv2.putText(orig_image, f"Objects: {boxes.size(0)}", (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
     cv2.imwrite(os.path.join(result_path, file_path), orig_image)
-    print(f"Found {len(probs)} faces. The output image is {result_path}")
+    print(f"Found {len(probs)} objects. The output image is {result_path}")
 print(sum)
