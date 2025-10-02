@@ -1,5 +1,5 @@
 """
-This code uses the pytorch model to detect faces from live video or camera.
+This code uses the pytorch model to detect objects from live video or camera.
 """
 import argparse
 import sys
@@ -12,9 +12,9 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('--net_type', default="RFB", type=str,
                     help='The network architecture ,optional: RFB (higher precision) or slim (faster)')
-parser.add_argument('--input_size', default=480, type=int,
+parser.add_argument('--input_size', default=640, type=int,
                     help='define network input size,default optional value 128/160/320/480/640/1280')
-parser.add_argument('--threshold', default=0.7, type=float,
+parser.add_argument('--threshold', default=0.5, type=float,
                     help='score threshold')
 parser.add_argument('--candidate_size', default=1000, type=int,
                     help='nms candidate size')
@@ -33,7 +33,7 @@ from vision.ssd.mb_tiny_fd import create_mb_tiny_fd, create_mb_tiny_fd_predictor
 from vision.ssd.mb_tiny_RFB_fd import create_Mb_Tiny_RFB_fd, create_Mb_Tiny_RFB_fd_predictor
 from vision.utils.misc import Timer
 
-label_path = "./models/voc-model-labels.txt"
+label_path = "./models/coco-model-labels.txt"  # Changed to COCO labels
 
 net_type = args.net_type
 
@@ -48,13 +48,11 @@ candidate_size = args.candidate_size
 threshold = args.threshold
 
 if net_type == 'slim':
-    model_path = "models/pretrained/version-slim-320.pth"
-    # model_path = "models/pretrained/version-slim-640.pth"
+    model_path = "models/pretrained/version-slim-640.pth"
     net = create_mb_tiny_fd(len(class_names), is_test=True, device=test_device)
     predictor = create_mb_tiny_fd_predictor(net, candidate_size=candidate_size, device=test_device)
 elif net_type == 'RFB':
-    model_path = "models/pretrained/version-RFB-320.pth"
-    # model_path = "models/pretrained/version-RFB-640.pth"
+    model_path = "models/pretrained/version-RFB-640.pth"
     net = create_Mb_Tiny_RFB_fd(len(class_names), is_test=True, device=test_device)
     predictor = create_Mb_Tiny_RFB_fd_predictor(net, candidate_size=candidate_size, device=test_device)
 else:
@@ -76,15 +74,16 @@ while True:
     print('Time: {:.6f}s, Detect Objects: {:d}.'.format(interval, labels.size(0)))
     for i in range(boxes.size(0)):
         box = boxes[i, :]
-        label = f" {probs[i]:.2f}"
+        label_index = labels[i].item()
+        label = f"{class_names[label_index]}: {probs[i]:.2f}"
         cv2.rectangle(orig_image, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 4)
 
-        # cv2.putText(orig_image, label,
-        #             (box[0], box[1] - 10),
-        #             cv2.FONT_HERSHEY_SIMPLEX,
-        #             0.5,  # font scale
-        #             (0, 0, 255),
-        #             2)  # line type
+        cv2.putText(orig_image, label,
+                    (box[0], box[1] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,  # font scale
+                    (0, 0, 255),
+                    2)  # line type
     orig_image = cv2.resize(orig_image, None, None, fx=0.8, fy=0.8)
     sum += boxes.size(0)
     cv2.imshow('annotated', orig_image)
@@ -92,4 +91,4 @@ while True:
         break
 cap.release()
 cv2.destroyAllWindows()
-print("all face num:{}".format(sum))
+print("all objects num:{}".format(sum))

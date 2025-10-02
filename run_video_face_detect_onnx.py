@@ -1,5 +1,5 @@
 """
-This code uses the onnx model to detect faces from live video or cameras.
+This code uses the onnx model to detect objects from live video or cameras.
 """
 import time
 
@@ -42,9 +42,9 @@ def predict(width, height, confidences, boxes, prob_threshold, iou_threshold=0.3
     return picked_box_probs[:, :4].astype(np.int32), np.array(picked_labels), picked_box_probs[:, 4]
 
 
-label_path = "models/voc-model-labels.txt"
+label_path = "models/coco-model-labels.txt"  # Changed to COCO labels
 
-onnx_path = "models/onnx/version-RFB-320.onnx"
+onnx_path = "models/onnx/version-RFB-640.onnx"
 class_names = [name.strip() for name in open(label_path).readlines()]
 
 predictor = onnx.load(onnx_path)
@@ -57,7 +57,7 @@ input_name = ort_session.get_inputs()[0].name
 
 cap = cv2.VideoCapture("/home/linzai/Videos/video/16_6.MP4")  # capture from camera
 
-threshold = 0.7
+threshold = 0.5  # Lower threshold for general object detection
 
 sum = 0
 while True:
@@ -66,8 +66,7 @@ while True:
         print("no img")
         break
     image = cv2.cvtColor(orig_image, cv2.COLOR_BGR2RGB)
-    image = cv2.resize(image, (320, 240))
-    # image = cv2.resize(image, (640, 480))
+    image = cv2.resize(image, (640, 640))  # Changed to 640x640
     image_mean = np.array([127, 127, 127])
     image = (image - image_mean) / 128
     image = np.transpose(image, [2, 0, 1])
@@ -84,12 +83,12 @@ while True:
 
         cv2.rectangle(orig_image, (box[0], box[1]), (box[2], box[3]), (255, 255, 0), 4)
 
-        # cv2.putText(orig_image, label,
-        #             (box[0] + 20, box[1] + 40),
-        #             cv2.FONT_HERSHEY_SIMPLEX,
-        #             1,  # font scale
-        #             (255, 0, 255),
-        #             2)  # line type
+        cv2.putText(orig_image, label,
+                    (box[0] + 5, box[1] - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,  # font scale
+                    (255, 0, 255),
+                    2)  # line type
     sum += boxes.shape[0]
     orig_image = cv2.resize(orig_image, (0, 0), fx=0.7, fy=0.7)
     cv2.imshow('annotated', orig_image)
