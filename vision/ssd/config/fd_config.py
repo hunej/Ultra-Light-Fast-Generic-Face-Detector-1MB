@@ -16,12 +16,13 @@ priors = []
 
 
 def define_img_size(size):
-    global image_size, feature_map_w_h_list, priors
+    global image_size, feature_map_w_h_list, priors, shrinkage_list
+    shrinkage_list = []  # Reset shrinkage_list
     img_size_dict = {128: [128, 96],
                      160: [160, 120],
                      320: [320, 240],
                      480: [480, 360],
-                     640: [640, 480],
+                     640: [640, 640],  # Changed to square 640x640
                      1280: [1280, 960]}
     image_size = img_size_dict[size]
 
@@ -29,7 +30,7 @@ def define_img_size(size):
                                  160: [[20, 10, 5, 3], [15, 8, 4, 2]],
                                  320: [[40, 20, 10, 5], [30, 15, 8, 4]],
                                  480: [[60, 30, 15, 8], [45, 23, 12, 6]],
-                                 640: [[80, 40, 20, 10], [60, 30, 15, 8]],
+                                 640: [[80, 40, 20, 10], [80, 40, 20, 10]],  # Square feature maps
                                  1280: [[160, 80, 40, 20], [120, 60, 30, 15]]}
     feature_map_w_h_list = feature_map_w_h_list_dict[size]
 

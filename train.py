@@ -13,6 +13,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, MultiStepLR
 from torch.utils.data import DataLoader, ConcatDataset
 
 from vision.datasets.voc_dataset import VOCDataset
+from vision.datasets.coco_dataset import COCODataset
 from vision.nn.multibox_loss import MultiboxLoss
 from vision.ssd.config.fd_config import define_img_size
 from vision.utils.misc import str2bool, Timer, freeze_net_layers, store_labels
@@ -21,7 +22,7 @@ parser = argparse.ArgumentParser(
     description='train With Pytorch')
 
 parser.add_argument("--dataset_type", default="voc", type=str,
-                    help='Specify dataset type. Currently support voc.')
+                    help='Specify dataset type. Currently support voc and coco.')
 
 parser.add_argument('--datasets', nargs='+', help='Dataset directory path')
 parser.add_argument('--validation_dataset', help='Dataset directory path')
@@ -223,7 +224,12 @@ if __name__ == '__main__':
             label_file = os.path.join(args.checkpoint_folder, "voc-model-labels.txt")
             store_labels(label_file, dataset.class_names)
             num_classes = len(dataset.class_names)
-
+        elif args.dataset_type == 'coco':
+            dataset = COCODataset(dataset_path, transform=train_transform,
+                                  target_transform=target_transform)
+            label_file = os.path.join(args.checkpoint_folder, "coco-model-labels.txt")
+            store_labels(label_file, dataset.class_names)
+            num_classes = len(dataset.class_names)
         else:
             raise ValueError(f"Dataset tpye {args.dataset_type} is not supported.")
         datasets.append(dataset)
@@ -237,6 +243,9 @@ if __name__ == '__main__':
     if args.dataset_type == "voc":
         val_dataset = VOCDataset(args.validation_dataset, transform=test_transform,
                                  target_transform=target_transform, is_test=True)
+    elif args.dataset_type == "coco":
+        val_dataset = COCODataset(args.validation_dataset, transform=test_transform,
+                                  target_transform=target_transform, is_test=True)
     logging.info("validation dataset size: {}".format(len(val_dataset)))
 
     val_loader = DataLoader(val_dataset, args.batch_size,
